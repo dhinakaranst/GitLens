@@ -5,6 +5,7 @@ import { analyzeWebsite } from './analyzer.js';
 import { checkMeta } from './routes/meta-check.js';
 import { analyzeHeadings } from './routes/headings.js';
 import { checkSocialTags } from './routes/social-tags.js';
+import { checkBrokenLinks } from './routes/broken-links.js';
 
 dotenv.config();
 
@@ -40,7 +41,7 @@ app.post('/api/audit', async (req, res) => {
   }
 });
 
-// New meta check endpoint
+// Meta check endpoint
 app.post('/api/meta-check', async (req, res) => {
   try {
     const { url } = req.body;
@@ -65,7 +66,7 @@ app.post('/api/meta-check', async (req, res) => {
   }
 });
 
-// New headings analyzer endpoint
+// Headings analyzer endpoint
 app.post('/api/headings', async (req, res) => {
   try {
     const { url } = req.body;
@@ -90,7 +91,7 @@ app.post('/api/headings', async (req, res) => {
   }
 });
 
-// New social tags checker endpoint
+// Social tags checker endpoint
 app.post('/api/social-tags', async (req, res) => {
   try {
     const { url } = req.body;
@@ -115,6 +116,31 @@ app.post('/api/social-tags', async (req, res) => {
   }
 });
 
+// Broken links checker endpoint
+app.post('/api/broken-links', async (req, res) => {
+  try {
+    const { url } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    const urlPattern = /^https?:\/\/.+/;
+    if (!urlPattern.test(url)) {
+      return res.status(400).json({ error: 'Invalid URL format. Please include http:// or https://' });
+    }
+
+    const result = await checkBrokenLinks(url);
+    res.json(result);
+  } catch (error) {
+    console.error('Broken links check error:', error);
+    res.status(500).json({ 
+      error: 'Failed to check broken links',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
@@ -126,4 +152,5 @@ app.listen(PORT, () => {
   console.log(`   POST /api/meta-check - Meta title & description checker`);
   console.log(`   POST /api/headings - Headings analyzer`);
   console.log(`   POST /api/social-tags - Social media tags checker`);
+  console.log(`   POST /api/broken-links - Broken links checker`);
 });
